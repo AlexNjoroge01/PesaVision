@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect, FormEvent, ChangeEvent } from 'react'
+import { useState, useRef, useEffect, useCallback, FormEvent, ChangeEvent } from 'react'
 import { useStatements } from '@/hooks/useStatements'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -37,14 +36,17 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when new messages arrive
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [messages])
+    scrollToBottom()
+  }, [messages, scrollToBottom])
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || isLoading) return
@@ -140,9 +142,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="space-y-6 h-[calc(100vh-8rem)]">
+    <div className="flex flex-col gap-6 h-[calc(100vh-8rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold">AI Chat</h1>
           <p className="text-muted-foreground">
@@ -167,10 +169,13 @@ export default function ChatPage() {
       </div>
 
       {/* Chat Container */}
-      <Card className="flex-1 flex flex-col h-[calc(100%-5rem)]">
-        <CardContent className="flex-1 flex flex-col p-0">
+      <Card className="flex-1 flex flex-col min-h-0">
+        <CardContent className="flex-1 flex flex-col p-0 min-h-0">
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+          <div
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto p-4"
+          >
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-12">
                 <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
@@ -237,9 +242,10 @@ export default function ChatPage() {
                     </div>
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
             )}
-          </ScrollArea>
+          </div>
 
           {/* Input */}
           <div className="border-t p-4">
