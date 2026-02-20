@@ -91,7 +91,16 @@ export async function POST(request: NextRequest) {
 
     switch (type) {
       case 'KRA_EXPORT':
-        const csvContent = generateKraExport(statement.transactions)
+        const csvContent = generateKraExport(statement.transactions as Array<{
+          date: Date | string
+          description: string
+          reference?: string
+          counterparty?: string
+          category: string
+          amount: number
+          isIncoming: boolean
+          balance?: number
+        }>)
         buffer = Buffer.from(csvContent, 'utf-8')
         fileName = `kra-export-${statementId}.csv`
         break
@@ -107,9 +116,9 @@ export async function POST(request: NextRequest) {
             netFlow: statement.netFlow,
             healthScore: statement.insight?.healthScore,
             aiSummary: statement.insight?.aiSummary,
-            topCustomers: statement.insight?.topCustomers as Array<{ name: string; amount: number; count: number }> | undefined,
+            topCustomers: statement.insight?.topCustomers as Array<{ name: string; amount?: number; count?: number; totalAmount?: number; transactionCount?: number }> | undefined,
             topExpenses: statement.insight?.topExpenses as Array<{ category: string; amount: number; percentage: number }> | undefined,
-            recommendations: statement.insight?.recommendations as string[] | undefined,
+            recommendations: (statement.insight?.recommendations ?? []) as Array<string | { title: string; description: string; priority: 'high' | 'medium' | 'low' }>,
           },
         })
         buffer = await renderToBuffer(monthlyPdf)
@@ -125,10 +134,10 @@ export async function POST(request: NextRequest) {
             totalIn: statement.totalIn,
             totalOut: statement.totalOut,
             netFlow: statement.netFlow,
-            monthlySummary: statement.insight?.monthlySummary as Array<{ month: string; income: number; expenses: number }> | undefined,
+            monthlySummary: statement.insight?.monthlySummary as Array<{ month: string; income?: number; expenses?: number; totalIn?: number; totalOut?: number }> | undefined,
             transactions: statement.transactions.map((t) => ({
               date: t.date,
-              description: t.description,
+              description: t.description ?? '',
               amount: t.amount,
               isIncoming: t.isIncoming,
               category: t.category,
@@ -142,12 +151,35 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 })
     }
 
-    // Upload report to Cloudinary
+    // Determine file extension for proper download format
+    const fileExtension = fileName.split('.').pop() || 'bin'
+    const baseFileName = fileName.replace(/\.[^.]+$/, '')
+    
+    // Validate buffer before upload
+    if (!buffer || buffer.length === 0) {
+      console.error('Empty buffer generated for report')
+      return NextResponse.json({ error: 'Failed to generate report content' }, { status: 500 })
+    }
+
+    // Validate PDF files have correct header
+    if (fileName.endsWith('.pdf')) {
+      const header = buffer.subarray(0, 5).toString('ascii')
+      if (header !== '%PDF-') {
+        console.error(`Generated PDF has invalid header: "${header}"`)
+        return NextResponse.json({ error: 'Failed to generate valid PDF' }, { status: 500 })
+      }
+    }
+    
+    console.log(`Uploading report: ${fileName}, buffer size: ${buffer.length} bytes`)
+    
+    // Upload report to Cloudinary with extension in public_id for proper file serving
     const uploadResult = await uploadToCloudinary(buffer, {
       folder: `reports/${session.user.id}`,
-      filename: fileName.replace(/\.[^.]+$/, ''),
+      filename: `${baseFileName}.${fileExtension}`, // Include extension in filename for raw files
       resourceType: 'raw',
     })
+    
+    console.log(`Upload result: ${uploadResult.secureUrl}`)
 
     // Create report record
     const report = await prisma.report.create({

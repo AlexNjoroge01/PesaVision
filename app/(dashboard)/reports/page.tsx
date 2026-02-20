@@ -192,7 +192,7 @@ export default function ReportsPage() {
                 </p>
                 {report.fileUrl ? (
                   <Button variant="outline" size="sm" className="w-full" asChild>
-                    <a href={report.fileUrl} download target="_blank" rel="noopener noreferrer">
+                    <a href={`/api/reports/${report.id}/download`} download>
                       <FileDown className="mr-2 h-4 w-4" />
                       Download {report.type === 'KRA_EXPORT' ? 'CSV' : 'PDF'}
                     </a>

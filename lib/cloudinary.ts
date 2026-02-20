@@ -27,13 +27,22 @@ export async function uploadToCloudinary(
   }
 ): Promise<UploadResult> {
   return new Promise((resolve, reject) => {
+    // For raw files, strip the extension from public_id since Cloudinary
+    // appends the format automatically for raw resources
+    let publicId = options.filename
+    if (publicId && options.resourceType === 'raw') {
+      // Remove extension from public_id to avoid double extensions
+      publicId = publicId.replace(/\.[^.]+$/, '')
+    }
+
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: options.folder,
-        public_id: options.filename,
+        public_id: publicId,
         resource_type: options.resourceType || 'auto',
-        use_filename: true,
-        unique_filename: true,
+        // For raw files, don't use filename options as they can interfere with extensions
+        use_filename: options.resourceType === 'raw' ? false : true,
+        unique_filename: options.resourceType === 'raw' ? false : true,
       },
       (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
         if (error || !result) {

@@ -181,6 +181,12 @@ const styles = StyleSheet.create({
   },
 })
 
+interface Recommendation {
+  title: string
+  description: string
+  priority: 'high' | 'medium' | 'low'
+}
+
 interface ReportData {
   statementId: string
   fileName: string
@@ -191,10 +197,10 @@ interface ReportData {
   netFlow: number
   healthScore?: number
   aiSummary?: string
-  topCustomers?: Array<{ name: string; amount: number; count: number }>
+  topCustomers?: Array<{ name: string; amount?: number; count?: number; totalAmount?: number; transactionCount?: number }>
   topExpenses?: Array<{ category: string; amount: number; percentage: number }>
-  recommendations?: string[]
-  monthlySummary?: Array<{ month: string; income: number; expenses: number }>
+  recommendations?: Array<string | Recommendation>
+  monthlySummary?: Array<{ month: string; income?: number; expenses?: number; totalIn?: number; totalOut?: number }>
 }
 
 interface Transaction {
@@ -219,8 +225,9 @@ export function MonthlySummaryPDF({ data }: { data: ReportData }) {
     })
   }
 
-  const formatCurrency = (amount: number) => {
-    return `KES ${amount.toLocaleString('en-KE')}`
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount == null) return 'KES 0'
+    return `KES ${Number(amount).toLocaleString('en-KE')}`
   }
 
   return (
@@ -256,7 +263,7 @@ export function MonthlySummaryPDF({ data }: { data: ReportData }) {
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Net Cash Flow</Text>
-              <Text style={data.netFlow >= 0 ? styles.statValueGreen : styles.statValueRed}>
+              <Text style={(data.netFlow ?? 0) >= 0 ? styles.statValueGreen : styles.statValueRed}>
                 {formatCurrency(data.netFlow)}
               </Text>
             </View>
@@ -277,8 +284,8 @@ export function MonthlySummaryPDF({ data }: { data: ReportData }) {
             <Text style={styles.sectionTitle}>Top Customers</Text>
             {data.topCustomers.slice(0, 5).map((customer, index) => (
               <View key={index} style={styles.listItem}>
-                <Text style={styles.listItemName}>{customer.name}</Text>
-                <Text style={styles.listItemValue}>{formatCurrency(customer.amount)}</Text>
+                <Text style={styles.listItemName}>{customer.name ?? 'Unknown'}</Text>
+                <Text style={styles.listItemValue}>{formatCurrency(customer.amount ?? customer.totalAmount)}</Text>
               </View>
             ))}
           </View>
@@ -290,9 +297,9 @@ export function MonthlySummaryPDF({ data }: { data: ReportData }) {
             <Text style={styles.sectionTitle}>Top Expense Categories</Text>
             {data.topExpenses.slice(0, 5).map((expense, index) => (
               <View key={index} style={styles.listItem}>
-                <Text style={styles.listItemName}>{expense.category}</Text>
+                <Text style={styles.listItemName}>{expense.category ?? 'Unknown'}</Text>
                 <Text style={styles.listItemValue}>
-                  {formatCurrency(expense.amount)} ({expense.percentage.toFixed(1)}%)
+                  {formatCurrency(expense.amount)} ({(expense.percentage ?? 0).toFixed(1)}%)
                 </Text>
               </View>
             ))}
@@ -305,7 +312,7 @@ export function MonthlySummaryPDF({ data }: { data: ReportData }) {
             <Text style={styles.sectionTitle}>Recommendations</Text>
             {data.recommendations.slice(0, 5).map((rec, index) => (
               <Text key={index} style={styles.recommendationItem}>
-                {rec}
+                {typeof rec === 'string' ? rec : `[${(rec as Recommendation).priority?.toUpperCase?.() ?? ''}] ${(rec as Recommendation).title ?? ''}: ${(rec as Recommendation).description ?? ''}`}
               </Text>
             ))}
           </View>
@@ -334,8 +341,9 @@ export function CashFlowPDF({ data }: { data: ReportData & { transactions: Trans
     })
   }
 
-  const formatCurrency = (amount: number) => {
-    return `KES ${amount.toLocaleString('en-KE')}`
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount == null) return 'KES 0'
+    return `KES ${Number(amount).toLocaleString('en-KE')}`
   }
 
   const formatShortDate = (date: string | Date) => {
@@ -370,7 +378,7 @@ export function CashFlowPDF({ data }: { data: ReportData & { transactions: Trans
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Net Cash Flow</Text>
-              <Text style={data.netFlow >= 0 ? styles.statValueGreen : styles.statValueRed}>
+              <Text style={(data.netFlow ?? 0) >= 0 ? styles.statValueGreen : styles.statValueRed}>
                 {formatCurrency(data.netFlow)}
               </Text>
             </View>
@@ -385,10 +393,10 @@ export function CashFlowPDF({ data }: { data: ReportData & { transactions: Trans
               <View key={index} style={styles.listItem}>
                 <Text style={styles.listItemName}>{month.month}</Text>
                 <Text style={styles.listItemValueGreen}>
-                  +{formatCurrency(month.income)}
+                  +{formatCurrency(month.income ?? month.totalIn)}
                 </Text>
                 <Text style={styles.listItemValueRed}>
-                  -{formatCurrency(month.expenses)}
+                  -{formatCurrency(month.expenses ?? month.totalOut)}
                 </Text>
               </View>
             ))}
