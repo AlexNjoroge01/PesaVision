@@ -4,7 +4,7 @@ import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import { prisma } from './prisma'
-import type { Plan } from '@/types'
+import type { Plan, UserRole } from '@/types'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
@@ -50,6 +50,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           image: user.image,
           plan: user.plan as Plan,
+          role: user.role as UserRole,
           businessName: user.businessName,
         }
       },
@@ -63,8 +64,9 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id!
-        token.plan = (user as any).plan as Plan
-        token.businessName = (user as any).businessName
+        token.plan = (user as { plan: Plan }).plan
+        token.role = (user as { role: UserRole }).role
+        token.businessName = (user as { businessName: string | null }).businessName
       }
 
       // Handle session update from client
@@ -73,14 +75,15 @@ export const authOptions: NextAuthOptions = {
         token.businessName = session.businessName
       }
 
-      // Fetch latest user data from DB to keep plan in sync
+      // Fetch latest user data from DB to keep plan and role in sync
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { plan: true, businessName: true },
+          select: { plan: true, role: true, businessName: true },
         })
         if (dbUser) {
           token.plan = dbUser.plan as Plan
+          token.role = dbUser.role as UserRole
           token.businessName = dbUser.businessName
         }
       }
@@ -91,6 +94,7 @@ export const authOptions: NextAuthOptions = {
       if (token) {
         session.user.id = token.id as string
         session.user.plan = token.plan as Plan
+        session.user.role = token.role as UserRole
         session.user.businessName = token.businessName as string | null
       }
       return session

@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { useChat } from '@ai-sdk/react'
+import { useState, useRef, useEffect, FormEvent, ChangeEvent } from 'react'
 import { useStatements } from '@/hooks/useStatements'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -19,6 +18,12 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { EmptyState } from '@/components/shared/EmptyState'
 
+interface Message {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
 const SUGGESTED_PROMPTS = [
   "What are my best customers?",
   "How can I improve my cash flow?",
@@ -29,20 +34,10 @@ const SUGGESTED_PROMPTS = [
 export default function ChatPage() {
   const { data: statements } = useStatements()
   const [selectedStatementId, setSelectedStatementId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-  } = useChat({
-    api: '/api/chat',
-    body: {
-      statementId: selectedStatementId,
-    },
-  })
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -50,6 +45,83 @@ export default function ChatPage() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages])
+
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || isLoading) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: content.trim(),
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+    setInput('')
+    setIsLoading(true)
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+          statementId: selectedStatementId,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let assistantContent = ''
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: '',
+      }
+
+      setMessages((prev) => [...prev, assistantMessage])
+
+      while (reader) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        assistantContent += chunk
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessage.id ? { ...m, content: assistantContent } : m
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Chat error:', error)
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+      }
+      setMessages((prev) => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    sendMessage(input)
+  }
+
+  const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+  }
 
   const completedStatements = statements?.filter((s) => s.status === 'DONE') || []
 
@@ -111,10 +183,7 @@ export default function ChatPage() {
                       key={prompt}
                       variant="outline"
                       className="justify-start text-left"
-                      onClick={() => {
-                        handleInputChange({ target: { value: prompt } } as React.ChangeEvent<HTMLTextAreaElement>)
-                        handleSubmit(new Event('submit') as any)
-                      }}
+                      onClick={() => sendMessage(prompt)}
                     >
                       {prompt}
                     </Button>
@@ -158,7 +227,7 @@ export default function ChatPage() {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                {isLoading && (
+                {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                   <div className="flex gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
                       <Bot className="h-4 w-4 text-primary-foreground" />

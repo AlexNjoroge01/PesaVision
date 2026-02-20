@@ -18,7 +18,7 @@ const InsightSchema = z.object({
         'AIRTIME',
         'UNCATEGORIZED',
       ]),
-      counterparty: z.string().nullable(),
+      counterparty: z.string().nullable().optional(),
     })
   ),
   topCustomers: z.array(

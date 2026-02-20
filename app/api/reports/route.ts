@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { canAccessKraExport } from '@/lib/plan-guard'
 import { uploadToCloudinary } from '@/lib/cloudinary'
+import { renderToBuffer } from '@react-pdf/renderer'
+import { MonthlySummaryPDF, CashFlowPDF } from '@/lib/pdf-report'
 import type { ReportType } from '@/types'
 
 export async function GET() {
@@ -84,28 +86,63 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate report content based on type
-    let reportContent: string
+    let buffer: Buffer
     let fileName: string
 
     switch (type) {
       case 'KRA_EXPORT':
-        reportContent = generateKraExport(statement.transactions)
+        const csvContent = generateKraExport(statement.transactions)
+        buffer = Buffer.from(csvContent, 'utf-8')
         fileName = `kra-export-${statementId}.csv`
         break
       case 'MONTHLY_SUMMARY':
-        reportContent = generateMonthlySummary(statement)
-        fileName = `monthly-summary-${statementId}.json`
+        const monthlyPdf = MonthlySummaryPDF({
+          data: {
+            statementId: statement.id,
+            fileName: statement.fileName,
+            periodStart: statement.periodStart,
+            periodEnd: statement.periodEnd,
+            totalIn: statement.totalIn,
+            totalOut: statement.totalOut,
+            netFlow: statement.netFlow,
+            healthScore: statement.insight?.healthScore,
+            aiSummary: statement.insight?.aiSummary,
+            topCustomers: statement.insight?.topCustomers as Array<{ name: string; amount: number; count: number }> | undefined,
+            topExpenses: statement.insight?.topExpenses as Array<{ category: string; amount: number; percentage: number }> | undefined,
+            recommendations: statement.insight?.recommendations as string[] | undefined,
+          },
+        })
+        buffer = await renderToBuffer(monthlyPdf)
+        fileName = `monthly-summary-${statementId}.pdf`
         break
       case 'CASH_FLOW':
-        reportContent = generateCashFlowReport(statement)
-        fileName = `cash-flow-${statementId}.json`
+        const cashFlowPdf = CashFlowPDF({
+          data: {
+            statementId: statement.id,
+            fileName: statement.fileName,
+            periodStart: statement.periodStart,
+            periodEnd: statement.periodEnd,
+            totalIn: statement.totalIn,
+            totalOut: statement.totalOut,
+            netFlow: statement.netFlow,
+            monthlySummary: statement.insight?.monthlySummary as Array<{ month: string; income: number; expenses: number }> | undefined,
+            transactions: statement.transactions.map((t) => ({
+              date: t.date,
+              description: t.description,
+              amount: t.amount,
+              isIncoming: t.isIncoming,
+              category: t.category,
+            })),
+          },
+        })
+        buffer = await renderToBuffer(cashFlowPdf)
+        fileName = `cash-flow-${statementId}.pdf`
         break
       default:
         return NextResponse.json({ error: 'Invalid report type' }, { status: 400 })
     }
 
     // Upload report to Cloudinary
-    const buffer = Buffer.from(reportContent, 'utf-8')
     const uploadResult = await uploadToCloudinary(buffer, {
       folder: `reports/${session.user.id}`,
       filename: fileName.replace(/\.[^.]+$/, ''),
@@ -138,7 +175,16 @@ export async function POST(request: NextRequest) {
 /**
  * Generate KRA-ready CSV export
  */
-function generateKraExport(transactions: any[]): string {
+function generateKraExport(transactions: Array<{
+  date: Date | string
+  description: string
+  reference?: string
+  counterparty?: string
+  category: string
+  amount: number
+  isIncoming: boolean
+  balance?: number
+}>): string {
   const headers = [
     'Date',
     'Description',
@@ -162,63 +208,4 @@ function generateKraExport(transactions: any[]): string {
   ])
 
   return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
-}
-
-/**
- * Generate monthly summary report
- */
-function generateMonthlySummary(statement: any): string {
-  const summary = {
-    statementId: statement.id,
-    period: {
-      start: statement.periodStart,
-      end: statement.periodEnd,
-    },
-    totals: {
-      totalIn: statement.totalIn,
-      totalOut: statement.totalOut,
-      netFlow: statement.netFlow,
-    },
-    insight: statement.insight
-      ? {
-          healthScore: statement.insight.healthScore,
-          aiSummary: statement.insight.aiSummary,
-          topCustomers: statement.insight.topCustomers,
-          topExpenses: statement.insight.topExpenses,
-          recommendations: statement.insight.recommendations,
-        }
-      : null,
-    generatedAt: new Date().toISOString(),
-  }
-
-  return JSON.stringify(summary, null, 2)
-}
-
-/**
- * Generate cash flow report
- */
-function generateCashFlowReport(statement: any): string {
-  const report = {
-    statementId: statement.id,
-    period: {
-      start: statement.periodStart,
-      end: statement.periodEnd,
-    },
-    summary: {
-      totalIn: statement.totalIn,
-      totalOut: statement.totalOut,
-      netFlow: statement.netFlow,
-    },
-    monthlySummary: statement.insight?.monthlySummary || [],
-    transactions: statement.transactions.map((t: any) => ({
-      date: t.date,
-      description: t.description,
-      amount: t.amount,
-      isIncoming: t.isIncoming,
-      category: t.category,
-    })),
-    generatedAt: new Date().toISOString(),
-  }
-
-  return JSON.stringify(report, null, 2)
 }
