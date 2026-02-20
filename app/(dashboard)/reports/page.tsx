@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { Loader2, FileDown, Plus, FileText, FileBarChart } from 'lucide-react'
+import { Loader2, FileDown, Plus, FileText, FileBarChart, FileSpreadsheet } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Report, ReportType, Statement } from '@/types'
 
@@ -87,9 +87,9 @@ export default function ReportsPage() {
   }
 
   const reportTypeLabels: Record<ReportType, string> = {
-    MONTHLY_SUMMARY: 'Monthly Summary',
-    KRA_EXPORT: 'KRA Export (Pro Only)',
-    CASH_FLOW: 'Cash Flow Report',
+    MONTHLY_SUMMARY: 'Monthly Summary (PDF)',
+    KRA_EXPORT: 'KRA Export (CSV)',
+    CASH_FLOW: 'Cash Flow Report (PDF)',
   }
 
   if (reportsLoading) {
@@ -181,7 +181,7 @@ export default function ReportsPage() {
                   {reportTypeLabels[report.type]}
                 </CardTitle>
                 {report.type === 'KRA_EXPORT' ? (
-                  <FileBarChart className="h-4 w-4 text-muted-foreground" />
+                  <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 )}
@@ -192,9 +192,9 @@ export default function ReportsPage() {
                 </p>
                 {report.fileUrl ? (
                   <Button variant="outline" size="sm" className="w-full" asChild>
-                    <a href={report.fileUrl} download>
+                    <a href={`/api/reports/${report.id}/download`} download>
                       <FileDown className="mr-2 h-4 w-4" />
-                      Download
+                      Download {report.type === 'KRA_EXPORT' ? 'CSV' : 'PDF'}
                     </a>
                   </Button>
                 ) : (

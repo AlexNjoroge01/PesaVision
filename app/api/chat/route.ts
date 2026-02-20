@@ -99,7 +99,7 @@ Recent Transactions: ${JSON.stringify(statement.transactions.slice(0, 10).map(t 
       messages,
     })
 
-    return result.toDataStreamResponse()
+    return result.toTextStreamResponse()
   } catch (error) {
     console.error('Chat error:', error)
     return new Response(

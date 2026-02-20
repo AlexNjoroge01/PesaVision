@@ -1,5 +1,6 @@
 // Enums
 export type Plan = 'FREE' | 'BASIC' | 'PRO'
+export type UserRole = 'USER' | 'SUPER_USER'
 export type StatementStatus = 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED'
 export type TransactionType = 'PAYBILL' | 'TILL' | 'SEND_MONEY' | 'RECEIVE_MONEY' | 'WITHDRAWAL' | 'DEPOSIT' | 'AIRTIME' | 'OTHER'
 export type Category = 'SALES' | 'SUPPLIER_PAYMENT' | 'UTILITY' | 'SALARY' | 'WITHDRAWAL' | 'TRANSFER' | 'AIRTIME' | 'UNCATEGORIZED'
@@ -17,6 +18,7 @@ export interface User {
   businessName: string | null
   plan: Plan
   planExpiresAt: Date | null
+  role: UserRole
   createdAt: Date
   updatedAt: Date
 }
@@ -207,6 +209,7 @@ declare module 'next-auth' {
       email?: string | null
       image?: string | null
       plan?: Plan
+      role?: UserRole
       businessName?: string | null
     }
   }
@@ -214,6 +217,7 @@ declare module 'next-auth' {
   interface User {
     id: string
     plan: Plan
+    role: UserRole
     businessName: string | null
   }
 }
@@ -222,6 +226,7 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id: string
     plan: Plan
+    role: UserRole
     businessName: string | null
   }
 }
