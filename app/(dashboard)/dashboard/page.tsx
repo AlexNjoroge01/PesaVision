@@ -1,19 +1,31 @@
 'use client'
 
+import { useState } from 'react'
 import { useStatements } from '@/hooks/useStatements'
 import { StatsCards } from '@/components/dashboard/StatsCards'
 import { CashFlowChart } from '@/components/dashboard/CashFlowChart'
 import { TopCustomersChart } from '@/components/dashboard/TopCustomersChart'
 import { CategoryBreakdownChart } from '@/components/dashboard/CategoryBreakdownChart'
+import { PeakDaysChart } from '@/components/dashboard/PeakDaysChart'
 import { TransactionsTable } from '@/components/dashboard/TransactionsTable'
 import { RecommendationCards } from '@/components/dashboard/RecommendationCards'
+import { QuickInsights } from '@/components/dashboard/QuickInsights'
+import { AISummaryCard } from '@/components/dashboard/AISummaryCard'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
-import { Loader2, Upload } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Loader2, Upload, FileText } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DashboardPage() {
   const { data: statements, isLoading, error } = useStatements()
+  const [selectedStatementId, setSelectedStatementId] = useState<string | null>(null)
 
   if (isLoading) {
     return (
@@ -31,10 +43,14 @@ export default function DashboardPage() {
     )
   }
 
-  // Get the most recent completed statement
-  const latestStatement = statements?.find((s) => s.status === 'DONE')
+  const completedStatements = statements?.filter((s) => s.status === 'DONE') || []
 
-  if (!latestStatement?.insight) {
+  // Use selected statement or fall back to the most recent completed one
+  const activeStatement = selectedStatementId
+    ? completedStatements.find((s) => s.id === selectedStatementId)
+    : completedStatements[0]
+
+  if (!activeStatement?.insight) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -56,61 +72,94 @@ export default function DashboardPage() {
     )
   }
 
-  const insight = latestStatement.insight as any
+  const insight = activeStatement.insight as any
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header with Statement Selector */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            {latestStatement.periodStart && latestStatement.periodEnd
-              ? `Statement period: ${new Date(latestStatement.periodStart).toLocaleDateString()} - ${new Date(latestStatement.periodEnd).toLocaleDateString()}`
+            {activeStatement.periodStart && activeStatement.periodEnd
+              ? `${new Date(activeStatement.periodStart).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })} — ${new Date(activeStatement.periodEnd).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}`
               : 'Your business analytics'}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/statements">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload New Statement
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {completedStatements.length > 1 && (
+            <Select
+              value={activeStatement.id}
+              onValueChange={setSelectedStatementId}
+            >
+              <SelectTrigger className="w-[220px]">
+                <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Select statement" />
+              </SelectTrigger>
+              <SelectContent>
+                {completedStatements.map((statement) => (
+                  <SelectItem key={statement.id} value={statement.id}>
+                    {statement.fileName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button asChild>
+            <Link href="/statements">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload New
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <StatsCards
-        totalIn={latestStatement.totalIn}
-        totalOut={latestStatement.totalOut}
-        netFlow={latestStatement.netFlow}
+        totalIn={activeStatement.totalIn}
+        totalOut={activeStatement.totalOut}
+        netFlow={activeStatement.netFlow}
         healthScore={insight.healthScore}
       />
 
-      {/* AI Summary */}
-      <div className="rounded-lg bg-muted p-4">
-        <h3 className="font-semibold mb-2">AI Summary</h3>
-        <p className="text-muted-foreground">{insight.aiSummary}</p>
-      </div>
+      {/* Quick Insights Row */}
+      {activeStatement.transactions && (
+        <QuickInsights
+          transactions={activeStatement.transactions}
+          peakDays={insight.peakDays || []}
+          periodStart={activeStatement.periodStart}
+          periodEnd={activeStatement.periodEnd}
+        />
+      )}
 
-      {/* Charts Row */}
+      {/* AI Summary Card with Health Gauge */}
+      <AISummaryCard
+        aiSummary={insight.aiSummary || ''}
+        healthScore={insight.healthScore}
+      />
+
+      {/* Charts Row 1: Cash Flow + Top Customers */}
       <div className="grid gap-6 lg:grid-cols-2">
         <CashFlowChart data={insight.monthlySummary} />
         <TopCustomersChart data={insight.topCustomers} />
       </div>
 
-      {/* Category Breakdown */}
-      <CategoryBreakdownChart data={insight.topExpenses} />
+      {/* Charts Row 2: Category Breakdown + Peak Days */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CategoryBreakdownChart data={insight.topExpenses} />
+        <PeakDaysChart data={insight.peakDays} />
+      </div>
 
       {/* Recommendations */}
       <RecommendationCards recommendations={insight.recommendations} />
 
       {/* Recent Transactions */}
-      {latestStatement.transactions && (
+      {activeStatement.transactions && (
         <TransactionsTable
-          transactions={latestStatement.transactions}
+          transactions={activeStatement.transactions}
           title="Recent Transactions"
-          showPagination={false}
-          limit={5}
+          showPagination={true}
+          limit={10}
         />
       )}
     </div>
