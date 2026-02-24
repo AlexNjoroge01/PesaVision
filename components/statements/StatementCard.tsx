@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import type { Statement } from '@/types'
 
 interface StatementCardProps {
-  statement: Statement & {
+  statement: Omit<Statement, 'insight'> & {
     insight?: { healthScore: number } | null
     _count?: { transactions: number }
   }

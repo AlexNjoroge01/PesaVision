@@ -183,12 +183,12 @@ async function processWhatsAppPdf(userId: string, mediaUrl: string, phone: strin
     await prisma.insight.create({
       data: {
         statementId: statement.id,
-        topCustomers: analysis.topCustomers,
-        topExpenses: analysis.topExpenses,
-        peakDays: analysis.peakDays,
-        monthlySummary: analysis.monthlySummary,
+        topCustomers: JSON.parse(JSON.stringify(analysis.topCustomers)),
+        topExpenses: JSON.parse(JSON.stringify(analysis.topExpenses)),
+        peakDays: JSON.parse(JSON.stringify(analysis.peakDays)),
+        monthlySummary: JSON.parse(JSON.stringify(analysis.monthlySummary)),
         aiSummary: analysis.aiSummary,
-        recommendations: analysis.recommendations,
+        recommendations: JSON.parse(JSON.stringify(analysis.recommendations)),
         healthScore: analysis.healthScore,
       },
     })

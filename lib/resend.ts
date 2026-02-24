@@ -58,11 +58,11 @@ export async function sendStatementReadyEmail(
   healthScore: number,
   aiSummary: string
 ) {
-  const { StatementReady } = await import('@/emails/StatementReady')
+  const { StatementReadyEmail } = await import('@/emails/StatementReady')
   return sendEmail({
     to: email,
     subject: 'Your M-Pesa analysis is ready 📊',
-    react: StatementReady({ statementId, healthScore, aiSummary }),
+    react: StatementReadyEmail({ statementId, healthScore, aiSummary }),
   })
 }
 
@@ -75,11 +75,11 @@ export async function sendSubscriptionConfirmedEmail(
   plan: string,
   nextBillingDate: Date
 ) {
-  const { SubscriptionConfirmed } = await import('@/emails/SubscriptionConfirmed')
+  const { SubscriptionConfirmedEmail } = await import('@/emails/SubscriptionConfirmed')
   return sendEmail({
     to: email,
     subject: `You're now on the ${plan} plan ✅`,
-    react: SubscriptionConfirmed({ name, plan, nextBillingDate }),
+    react: SubscriptionConfirmedEmail({ name, plan, nextBillingDate }),
   })
 }
 
@@ -96,11 +96,11 @@ export async function sendMonthlySummaryEmail(
   topCustomer: string,
   healthScore: number
 ) {
-  const { MonthlySummary } = await import('@/emails/MonthlySummary')
+  const { MonthlySummaryEmail } = await import('@/emails/MonthlySummary')
   return sendEmail({
     to: email,
     subject: `📈 Your ${month} business summary`,
-    react: MonthlySummary({
+    react: MonthlySummaryEmail({
       name,
       month,
       totalIn,

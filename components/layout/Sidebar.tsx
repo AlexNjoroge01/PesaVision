@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/stores/useAppStore'
 import {
@@ -13,6 +14,7 @@ import {
   FileBarChart,
   ChevronLeft,
   ChevronRight,
+  Shield,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -24,9 +26,18 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings },
 ]
 
+const adminNavigation = {
+  name: 'Admin',
+  href: '/admin',
+  icon: Shield,
+}
+
 export function Sidebar() {
   const pathname = usePathname()
   const { sidebarOpen, toggleSidebar } = useAppStore()
+  const { data: session } = useSession()
+
+  const isAdmin = session?.user?.role === 'SUPER_USER'
 
   return (
     <aside
@@ -103,6 +114,27 @@ export function Sidebar() {
               </Link>
             )
           })}
+
+          {/* Admin Link - Only visible to SUPER_USER */}
+          {isAdmin && (
+            <>
+              <div className="my-2 border-t border-border" />
+              <Link
+                href={adminNavigation.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  pathname === adminNavigation.href || pathname.startsWith(adminNavigation.href + '/')
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
+                    : 'text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950',
+                  !sidebarOpen && 'justify-center'
+                )}
+                title={!sidebarOpen ? adminNavigation.name : undefined}
+              >
+                <adminNavigation.icon className="h-5 w-5 shrink-0" />
+                {sidebarOpen && <span>{adminNavigation.name}</span>}
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Footer */}

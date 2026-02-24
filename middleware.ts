@@ -3,6 +3,17 @@ import { NextResponse } from 'next/server'
 
 export default withAuth(
   function middleware(req) {
+    const { pathname } = req.nextUrl
+    const token = req.nextauth.token
+
+    // Protect admin routes - only SUPER_USER can access
+    if (pathname.startsWith('/admin')) {
+      if (token?.role !== 'SUPER_USER') {
+        // Redirect non-admin users to dashboard
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
+    }
+
     // Allow the request to proceed
     return NextResponse.next()
   },
@@ -29,7 +40,8 @@ export default withAuth(
           pathname.startsWith('/statements') ||
           pathname.startsWith('/reports') ||
           pathname.startsWith('/chat') ||
-          pathname.startsWith('/settings')
+          pathname.startsWith('/settings') ||
+          pathname.startsWith('/admin')
         ) {
           return !!token
         }
