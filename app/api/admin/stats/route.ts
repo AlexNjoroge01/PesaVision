@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { Plan } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -152,7 +153,7 @@ export async function GET(request: NextRequest) {
       PRO: 999, // KES per month
     }
 
-    const monthlyRecurringRevenue = usersByPlan.reduce((total: number, plan) => {
+    const monthlyRecurringRevenue = usersByPlan.reduce((total: number, plan: { plan: Plan; _count: { id: number } }) => {
       return total + (plan._count.id * (planPrices[plan.plan] || 0))
     }, 0)
 
