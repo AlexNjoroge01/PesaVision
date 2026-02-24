@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { uploadPdf } from '@/lib/cloudinary'
 import { canUploadStatement } from '@/lib/plan-guard'
+import { analyzeStatement } from '@/lib/statement-analyzer'
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,33 +65,17 @@ export async function POST(request: NextRequest) {
     })
 
     // Trigger analysis in background (fire-and-forget)
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
-
-    // Encode buffer as base64 for internal API call
-    const base64Buffer = buffer.toString('base64')
-
+    // Call the analysis function directly instead of making an HTTP request
+    // This avoids authentication issues with Vercel deployment protection
     console.log('[UPLOAD] Triggering analysis for statement:', statement.id)
-    console.log('[UPLOAD] Base URL:', baseUrl)
-    console.log('[UPLOAD] Analyze URL:', `${baseUrl}/api/analyze`)
 
-    fetch(`${baseUrl}/api/analyze`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        statementId: statement.id,
-        fileBuffer: base64Buffer,
-      }),
-    }).then((response) => {
-      console.log('[UPLOAD] Analysis response status:', response.status)
-      return response.text()
-    }).then((text) => {
-      console.log('[UPLOAD] Analysis response body:', text)
+    analyzeStatement({
+      statementId: statement.id,
+      fileBuffer: buffer,
+    }).then((result) => {
+      console.log('[UPLOAD] Analysis result:', result)
     }).catch((error) => {
-      console.error('[UPLOAD] Failed to trigger analysis:', error)
+      console.error('[UPLOAD] Failed to analyze statement:', error)
     })
 
     return NextResponse.json({
