@@ -1,27 +1,4 @@
-import { Resend } from 'resend'
-import { render } from '@react-email/render'
 import type { ReactElement } from 'react'
-
-// Lazy-initialize Resend to avoid build-time errors when env vars aren't available
-let resendInstance: Resend | null = null
-
-function getResend(): Resend {
-  if (!resendInstance) {
-    const apiKey = process.env.RESEND_API_KEY
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY environment variable is not set')
-    }
-    resendInstance = new Resend(apiKey)
-  }
-  return resendInstance
-}
-
-// Export a getter instead of the instance directly
-export const resend = {
-  get emails() {
-    return getResend().emails
-  }
-}
 
 export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
@@ -33,8 +10,20 @@ interface SendEmailOptions {
 
 /**
  * Send an email using Resend
+ * Uses dynamic imports to avoid build-time errors when env vars aren't available
  */
 export async function sendEmail({ to, subject, react }: SendEmailOptions) {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.warn('RESEND_API_KEY not set, skipping email send')
+    return null
+  }
+
+  // Dynamic imports to avoid build-time evaluation
+  const { Resend } = await import('resend')
+  const { render } = await import('@react-email/render')
+  
+  const resend = new Resend(apiKey)
   const html = await render(react)
   
   const { data, error } = await resend.emails.send({
