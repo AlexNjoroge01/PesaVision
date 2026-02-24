@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Upload, Plus } from 'lucide-react'
+import { Upload, Plus, ArrowRight, FileText } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function StatementsPage() {
@@ -26,23 +26,24 @@ export default function StatementsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Statements</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">Statements</h1>
+          <p className="text-muted-foreground mt-1">
             Upload and manage your M-Pesa statements
           </p>
         </div>
         <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
               <Plus className="mr-2 h-4 w-4" />
               Upload Statement
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-xl border-0 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Upload M-Pesa Statement</DialogTitle>
+              <DialogTitle className="text-xl font-bold">Upload M-Pesa Statement</DialogTitle>
             </DialogHeader>
             <UploadZone onUploadComplete={handleUploadComplete} />
           </DialogContent>

@@ -28,9 +28,16 @@ export default function DashboardLayout({
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background relative">
+          {/* Gradient Backgrounds - matching landing page */}
+          <div className="fixed inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/3 -left-40 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-1/4 right-1/4 w-60 h-60 bg-cyan-500/5 rounded-full blur-3xl" />
+          </div>
+
           {/* Sidebar - hidden on mobile */}
-          <div className="hidden md:block">
+          <div className="hidden md:block relative z-20">
             <Sidebar />
           </div>
 
@@ -40,7 +47,7 @@ export default function DashboardLayout({
           {/* Main content */}
           <main
             className={cn(
-              'min-h-screen pt-16 transition-all duration-300',
+              'min-h-screen pt-16 transition-all duration-300 relative z-10',
               sidebarOpen ? 'md:pl-64' : 'md:pl-16'
             )}
           >

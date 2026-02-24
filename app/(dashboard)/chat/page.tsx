@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Send, Bot, User, MessageSquare } from 'lucide-react'
+import { Loader2, Send, Bot, User, MessageSquare, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -131,8 +131,8 @@ export default function ChatPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">AI Chat</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">AI Chat</h1>
+          <p className="text-muted-foreground mt-1">
             Chat with an AI advisor about your business
           </p>
         </div>
@@ -144,10 +144,10 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col gap-6 h-[calc(100vh-8rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between shrink-0">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
         <div>
-          <h1 className="text-2xl font-bold">AI Chat</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">AI Chat</h1>
+          <p className="text-muted-foreground mt-1">
             Ask questions about your business data
           </p>
         </div>
@@ -155,7 +155,7 @@ export default function ChatPage() {
           value={selectedStatementId || ''}
           onValueChange={setSelectedStatementId}
         >
-          <SelectTrigger className="w-[250px]">
+          <SelectTrigger className="w-[250px] rounded-xl border-2">
             <SelectValue placeholder="Select a statement" />
           </SelectTrigger>
           <SelectContent>
@@ -169,34 +169,38 @@ export default function ChatPage() {
       </div>
 
       {/* Chat Container */}
-      <Card className="flex-1 flex flex-col min-h-0">
+      <Card className="flex-1 flex flex-col min-h-0 bg-background/80 backdrop-blur-xl border-0 shadow-2xl shadow-primary/10">
         <CardContent className="flex-1 flex flex-col p-0 min-h-0">
           {/* Messages */}
           <div
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto p-4"
+            className="flex-1 overflow-y-auto p-6"
           >
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-12">
-                <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-6">
-                  Start a conversation with your AI advisor
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center mb-6">
+                  <MessageSquare className="h-8 w-8 text-primary" />
+                </div>
+                <p className="text-lg font-medium mb-2">Start a conversation</p>
+                <p className="text-muted-foreground mb-8 text-center max-w-md">
+                  Ask questions about your business data and get AI-powered insights
                 </p>
-                <div className="grid gap-2 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2 w-full max-w-lg">
                   {SUGGESTED_PROMPTS.map((prompt) => (
                     <Button
                       key={prompt}
                       variant="outline"
-                      className="justify-start text-left"
+                      className="justify-start text-left h-auto py-3 px-4 rounded-xl border-2 hover:bg-muted/50 transition-all"
                       onClick={() => sendMessage(prompt)}
                     >
-                      {prompt}
+                      <ArrowRight className="h-4 w-4 mr-2 shrink-0 text-primary" />
+                      <span className="text-sm">{prompt}</span>
                     </Button>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <AnimatePresence>
                   {messages.map((message) => (
                     <motion.div
@@ -210,23 +214,23 @@ export default function ChatPage() {
                       )}
                     >
                       {message.role !== 'user' && (
-                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                          <Bot className="h-4 w-4 text-primary-foreground" />
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center shrink-0 shadow-lg shadow-primary/25">
+                          <Bot className="h-5 w-5 text-white" />
                         </div>
                       )}
                       <div
                         className={cn(
-                          'rounded-lg px-4 py-2 max-w-[80%]',
+                          'rounded-2xl px-5 py-3 max-w-[80%]',
                           message.role === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+                            : 'bg-muted/80 backdrop-blur'
                         )}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                       </div>
                       {message.role === 'user' && (
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <User className="h-4 w-4" />
+                        <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                          <User className="h-5 w-5" />
                         </div>
                       )}
                     </motion.div>
@@ -234,11 +238,11 @@ export default function ChatPage() {
                 </AnimatePresence>
                 {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                      <Bot className="h-4 w-4 text-primary-foreground" />
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center shrink-0 shadow-lg shadow-primary/25">
+                      <Bot className="h-5 w-5 text-white" />
                     </div>
-                    <div className="bg-muted rounded-lg px-4 py-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    <div className="bg-muted/80 backdrop-blur rounded-2xl px-5 py-3">
+                      <Loader2 className="h-5 w-5 animate-spin" />
                     </div>
                   </div>
                 )}
@@ -248,13 +252,13 @@ export default function ChatPage() {
           </div>
 
           {/* Input */}
-          <div className="border-t p-4">
-            <form onSubmit={handleSubmit} className="flex gap-2">
+          <div className="border-t p-4 bg-background/50 backdrop-blur">
+            <form onSubmit={handleSubmit} className="flex gap-3">
               <Textarea
                 value={input}
                 onChange={handleInputChange}
                 placeholder="Ask about your business..."
-                className="min-h-[44px] max-h-32 resize-none"
+                className="min-h-[48px] max-h-32 resize-none rounded-xl border-2 focus:border-primary transition-colors"
                 rows={1}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -263,8 +267,13 @@ export default function ChatPage() {
                   }
                 }}
               />
-              <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-                <Send className="h-4 w-4" />
+              <Button 
+                type="submit" 
+                size="icon" 
+                disabled={isLoading || !input.trim()}
+                className="h-12 w-12 rounded-xl shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all shrink-0"
+              >
+                <Send className="h-5 w-5" />
               </Button>
             </form>
           </div>

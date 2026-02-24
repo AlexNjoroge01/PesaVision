@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, Upload, FileText } from 'lucide-react'
+import { Loader2, Upload, FileText, ArrowRight, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
 export default function DashboardPage() {
@@ -53,17 +53,18 @@ export default function DashboardPage() {
   if (!activeStatement?.insight) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
               Welcome to your business analytics
             </p>
           </div>
-          <Button asChild>
+          <Button asChild className="rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
             <Link href="/statements">
               <Upload className="mr-2 h-4 w-4" />
               Upload Statement
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -79,20 +80,20 @@ export default function DashboardPage() {
       {/* Header with Statement Selector */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
             {activeStatement.periodStart && activeStatement.periodEnd
               ? `${new Date(activeStatement.periodStart).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })} — ${new Date(activeStatement.periodEnd).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}`
               : 'Your business analytics'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {completedStatements.length > 1 && (
             <Select
               value={activeStatement.id}
               onValueChange={setSelectedStatementId}
             >
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-[220px] rounded-xl border-2">
                 <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Select statement" />
               </SelectTrigger>
@@ -105,7 +106,7 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
           )}
-          <Button asChild>
+          <Button asChild className="rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
             <Link href="/statements">
               <Upload className="mr-2 h-4 w-4" />
               Upload New

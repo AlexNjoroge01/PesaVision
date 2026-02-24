@@ -19,7 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { Loader2, FileDown, Plus, FileText, FileBarChart, FileSpreadsheet } from 'lucide-react'
+import { Loader2, FileDown, Plus, FileText, FileBarChart, FileSpreadsheet, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Report, ReportType, Statement } from '@/types'
 
@@ -103,29 +103,33 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Reports</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
+          <p className="text-muted-foreground mt-1">
             Generate and download business reports
           </p>
         </div>
         <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
           <DialogTrigger asChild>
-            <Button disabled={completedStatements.length === 0}>
+            <Button 
+              disabled={completedStatements.length === 0}
+              className="rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
+            >
               <Plus className="mr-2 h-4 w-4" />
               Generate Report
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-background/95 backdrop-blur-xl border-0 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Generate Report</DialogTitle>
+              <DialogTitle className="text-xl font-bold">Generate Report</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Statement</label>
                 <Select value={selectedStatementId} onValueChange={setSelectedStatementId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-2">
                     <SelectValue placeholder="Select a statement" />
                   </SelectTrigger>
                   <SelectContent>
@@ -140,7 +144,7 @@ export default function ReportsPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Report Type</label>
                 <Select value={selectedReportType} onValueChange={(v) => setSelectedReportType(v as ReportType)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl border-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -151,7 +155,7 @@ export default function ReportsPage() {
                 </Select>
               </div>
               <Button
-                className="w-full"
+                className="w-full rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
                 onClick={handleGenerateReport}
                 disabled={generateMutation.isPending}
               >
@@ -161,7 +165,10 @@ export default function ReportsPage() {
                     Generating...
                   </>
                 ) : (
-                  'Generate Report'
+                  <>
+                    Generate Report
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
                 )}
               </Button>
             </div>
@@ -175,23 +182,27 @@ export default function ReportsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {reports.map((report) => (
-            <Card key={report.id}>
+            <Card key={report.id} className="bg-background/80 backdrop-blur border-0 shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   {reportTypeLabels[report.type]}
                 </CardTitle>
                 {report.type === 'KRA_EXPORT' ? (
-                  <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center">
+                    <FileSpreadsheet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
                 ) : (
-                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
                 )}
               </CardHeader>
               <CardContent>
-                <p className="text-xs text-muted-foreground mb-2">
+                <p className="text-xs text-muted-foreground mb-4">
                   Created: {new Date(report.createdAt).toLocaleDateString()}
                 </p>
                 {report.fileUrl ? (
-                  <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Button variant="outline" size="sm" className="w-full rounded-full border-2" asChild>
                     <a href={`/api/reports/${report.id}/download`} download>
                       <FileDown className="mr-2 h-4 w-4" />
                       Download {report.type === 'KRA_EXPORT' ? 'CSV' : 'PDF'}

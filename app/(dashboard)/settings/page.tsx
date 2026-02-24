@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { PlanBadge } from '@/components/shared/PlanBadge'
 import { useSubscribe } from '@/hooks/useSubscription'
-import { Loader2, User, CreditCard, Shield, Trash2 } from 'lucide-react'
+import { Loader2, User, CreditCard, Shield, Trash2, ArrowRight, Check } from 'lucide-react'
 import { toast } from 'sonner'
 
 const profileSchema = z.object({
@@ -33,6 +33,34 @@ const passwordSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>
 type PasswordFormData = z.infer<typeof passwordSchema>
+
+const plans = [
+  {
+    name: 'Free',
+    price: 'KES 0',
+    period: '',
+    description: '1 statement per month',
+    features: ['1 statement analysis', 'Basic dashboard', 'AI summary'],
+    plan: 'FREE' as const,
+  },
+  {
+    name: 'Basic',
+    price: 'KES 499',
+    period: '/mo',
+    description: 'Unlimited statements',
+    features: ['Unlimited statements', 'Full dashboard', 'Downloadable reports', 'AI chat advisor'],
+    plan: 'BASIC' as const,
+    highlighted: true,
+  },
+  {
+    name: 'Pro',
+    price: 'KES 1,499',
+    period: '/mo',
+    description: 'All features + KRA export',
+    features: ['Everything in Basic', 'KRA-ready exports', 'WhatsApp bot', 'Priority support'],
+    plan: 'PRO' as const,
+  },
+]
 
 export default function SettingsPage() {
   const { data: session, update } = useSession()
@@ -111,17 +139,19 @@ export default function SettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground mt-1">
           Manage your account settings and subscription
         </p>
       </div>
 
       {/* Profile Section */}
-      <Card>
+      <Card className="bg-background/80 backdrop-blur border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <User className="h-4 w-4 text-primary" />
+            </div>
             Profile
           </CardTitle>
           <CardDescription>
@@ -135,11 +165,12 @@ export default function SettingsPage() {
           >
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name" className="text-sm font-medium">Name</Label>
                 <Input
                   id="name"
                   {...profileForm.register('name')}
                   placeholder="Your name"
+                  className="h-11 rounded-xl border-2"
                 />
                 {profileForm.formState.errors.name && (
                   <p className="text-sm text-red-500">
@@ -148,39 +179,48 @@ export default function SettingsPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm font-medium">Email</Label>
                 <Input
                   id="email"
                   value={session?.user?.email || ''}
                   disabled
-                  className="bg-muted"
+                  className="h-11 rounded-xl border-2 bg-muted"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="businessName">Business Name</Label>
+                <Label htmlFor="businessName" className="text-sm font-medium">Business Name</Label>
                 <Input
                   id="businessName"
                   {...profileForm.register('businessName')}
                   placeholder="Your business name"
+                  className="h-11 rounded-xl border-2"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className="text-sm font-medium">Phone Number</Label>
                 <Input
                   id="phone"
                   {...profileForm.register('phone')}
                   placeholder="+254 7XX XXX XXX"
+                  className="h-11 rounded-xl border-2"
                 />
               </div>
             </div>
-            <Button type="submit" disabled={updateProfileMutation.isPending}>
+            <Button 
+              type="submit" 
+              disabled={updateProfileMutation.isPending}
+              className="rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all"
+            >
               {updateProfileMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
-                'Save Changes'
+                <>
+                  Save Changes
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
               )}
             </Button>
           </form>
@@ -188,18 +228,20 @@ export default function SettingsPage() {
       </Card>
 
       {/* Billing Section */}
-      <Card id="billing">
+      <Card id="billing" className="bg-background/80 backdrop-blur border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <CreditCard className="h-4 w-4 text-primary" />
+            </div>
             Subscription
           </CardTitle>
           <CardDescription>
             Manage your subscription and billing
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
             <div>
               <p className="font-medium">Current Plan</p>
               <p className="text-sm text-muted-foreground">
@@ -213,72 +255,62 @@ export default function SettingsPage() {
             <PlanBadge plan={session?.user?.plan || 'FREE'} />
           </div>
 
-          <Separator />
-
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="border-muted">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Free</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold mb-2">KES 0</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  1 statement per month
-                </p>
-                <Button variant="outline" className="w-full" disabled={session?.user?.plan === 'FREE'}>
-                  {session?.user?.plan === 'FREE' ? 'Current' : 'Downgrade'}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="border-primary">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Basic</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold mb-2">KES 499<span className="text-sm font-normal">/mo</span></p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Unlimited statements
-                </p>
-                <Button
-                  className="w-full"
-                  variant={session?.user?.plan === 'BASIC' ? 'outline' : 'default'}
-                  disabled={session?.user?.plan === 'BASIC' || subscribe.isPending}
-                  onClick={() => handleUpgrade('BASIC')}
-                >
-                  {session?.user?.plan === 'BASIC' ? 'Current' : 'Upgrade'}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="border-muted">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Pro</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold mb-2">KES 1,499<span className="text-sm font-normal">/mo</span></p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  All features + KRA export
-                </p>
-                <Button
-                  className="w-full"
-                  variant={session?.user?.plan === 'PRO' ? 'outline' : 'default'}
-                  disabled={session?.user?.plan === 'PRO' || subscribe.isPending}
-                  onClick={() => handleUpgrade('PRO')}
-                >
-                  {session?.user?.plan === 'PRO' ? 'Current' : 'Upgrade'}
-                </Button>
-              </CardContent>
-            </Card>
+            {plans.map((plan) => (
+              <Card 
+                key={plan.name}
+                className={`relative ${
+                  plan.highlighted
+                    ? 'border-primary shadow-lg shadow-primary/10'
+                    : 'border-border'
+                } ${session?.user?.plan === plan.plan ? 'ring-2 ring-primary' : ''}`}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      Popular
+                    </span>
+                  </div>
+                )}
+                <CardHeader className="pb-2 pt-6">
+                  <CardTitle className="text-lg">{plan.name}</CardTitle>
+                  <div className="mt-2">
+                    <span className="text-2xl font-bold">{plan.price}</span>
+                    <span className="text-muted-foreground">{plan.period}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{plan.description}</p>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 mb-4">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-primary" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button
+                    className="w-full rounded-full"
+                    variant={session?.user?.plan === plan.plan ? 'outline' : 'default'}
+                    disabled={session?.user?.plan === plan.plan || subscribe.isPending}
+                    onClick={() => plan.plan !== 'FREE' && handleUpgrade(plan.plan as 'BASIC' | 'PRO')}
+                  >
+                    {session?.user?.plan === plan.plan ? 'Current' : plan.plan === 'FREE' ? 'Downgrade' : 'Upgrade'}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>
 
       {/* Password Section */}
-      <Card>
+      <Card className="bg-background/80 backdrop-blur border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Shield className="h-4 w-4 text-primary" />
+            </div>
             Security
           </CardTitle>
           <CardDescription>
@@ -287,7 +319,11 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           {!showPasswordForm ? (
-            <Button variant="outline" onClick={() => setShowPasswordForm(true)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPasswordForm(true)}
+              className="rounded-full border-2"
+            >
               Change Password
             </Button>
           ) : (
@@ -297,32 +333,39 @@ export default function SettingsPage() {
             >
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
+                  <Label htmlFor="currentPassword" className="text-sm font-medium">Current Password</Label>
                   <Input
                     id="currentPassword"
                     type="password"
                     {...passwordForm.register('currentPassword')}
+                    className="h-11 rounded-xl border-2"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
+                  <Label htmlFor="newPassword" className="text-sm font-medium">New Password</Label>
                   <Input
                     id="newPassword"
                     type="password"
                     {...passwordForm.register('newPassword')}
+                    className="h-11 rounded-xl border-2"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm Password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     {...passwordForm.register('confirmPassword')}
+                    className="h-11 rounded-xl border-2"
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={changePasswordMutation.isPending}>
+              <div className="flex gap-3">
+                <Button 
+                  type="submit" 
+                  disabled={changePasswordMutation.isPending}
+                  className="rounded-full shadow-lg shadow-primary/25"
+                >
                   {changePasswordMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -339,6 +382,7 @@ export default function SettingsPage() {
                     setShowPasswordForm(false)
                     passwordForm.reset()
                   }}
+                  className="rounded-full border-2"
                 >
                   Cancel
                 </Button>
@@ -349,10 +393,12 @@ export default function SettingsPage() {
       </Card>
 
       {/* Danger Zone */}
-      <Card className="border-red-200">
+      <Card className="border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-600">
-            <Trash2 className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+              <Trash2 className="h-4 w-4" />
+            </div>
             Danger Zone
           </CardTitle>
           <CardDescription>
@@ -360,7 +406,7 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="destructive" disabled>
+          <Button variant="destructive" disabled className="rounded-full">
             Delete Account
           </Button>
         </CardContent>

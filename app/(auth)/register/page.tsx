@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Eye, EyeOff, ArrowRight, Sparkles, CheckCircle } from 'lucide-react'
+import { Loader2, Eye, EyeOff, ArrowRight, LineChart, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -109,7 +109,7 @@ export default function RegisterPage() {
     <Card className="w-full max-w-md bg-background/80 backdrop-blur-xl border-0 shadow-2xl shadow-primary/10">
       <CardHeader className="text-center pb-2">
         <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center mb-4">
-          <Sparkles className="h-7 w-7 text-primary" />
+          <LineChart className="h-7 w-7 text-primary" />
         </div>
         <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
         <CardDescription className="text-base">
