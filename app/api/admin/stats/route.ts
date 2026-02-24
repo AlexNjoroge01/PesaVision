@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
       PRO: 999, // KES per month
     }
 
-    const monthlyRecurringRevenue = usersByPlan.reduce((total, plan) => {
+    const monthlyRecurringRevenue = usersByPlan.reduce((total: number, plan) => {
       return total + (plan._count.id * (planPrices[plan.plan] || 0))
     }, 0)
 
