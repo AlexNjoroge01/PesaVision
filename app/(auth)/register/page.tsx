@@ -7,11 +7,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff, ArrowRight, Sparkles, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -27,6 +26,12 @@ const registerSchema = z.object({
 })
 
 type RegisterFormData = z.infer<typeof registerSchema>
+
+const benefits = [
+  '1 free statement analysis per month',
+  'AI-powered insights',
+  'Transaction categorization',
+]
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -101,25 +106,38 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Create an account</CardTitle>
-        <CardDescription>
+    <Card className="w-full max-w-md bg-background/80 backdrop-blur-xl border-0 shadow-2xl shadow-primary/10">
+      <CardHeader className="text-center pb-2">
+        <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center mb-4">
+          <Sparkles className="h-7 w-7 text-primary" />
+        </div>
+        <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+        <CardDescription className="text-base">
           Start analyzing your M-Pesa statements
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 pt-4">
+        {/* Benefits */}
+        <div className="flex flex-wrap justify-center gap-2 mb-4">
+          {benefits.map((benefit, index) => (
+            <div key={index} className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
+              <CheckCircle className="h-3 w-3 text-primary" />
+              <span>{benefit}</span>
+            </div>
+          ))}
+        </div>
+
         {/* Google Sign In */}
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full h-11 rounded-full border-2 hover:bg-muted/50 transition-all"
           onClick={handleGoogleSignIn}
           disabled={isGoogleLoading}
         >
           {isGoogleLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+            <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 fill="#4285F4"
@@ -143,10 +161,10 @@ export default function RegisterPage() {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <Separator className="w-full" />
+            <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
+            <span className="bg-background/80 backdrop-blur-xl px-3 text-muted-foreground">
               Or create account with email
             </span>
           </div>
@@ -155,10 +173,11 @@ export default function RegisterPage() {
         {/* Registration Form */}
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
             <Input
               id="name"
               placeholder="John Doe"
+              className="h-11 rounded-xl border-2 focus:border-primary transition-colors"
               {...form.register('name')}
             />
             {form.formState.errors.name && (
@@ -169,11 +188,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm font-medium">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="you@example.com"
+              className="h-11 rounded-xl border-2 focus:border-primary transition-colors"
               {...form.register('email')}
             />
             {form.formState.errors.email && (
@@ -184,28 +204,30 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="businessName">Business Name (Optional)</Label>
+            <Label htmlFor="businessName" className="text-sm font-medium">Business Name <span className="text-muted-foreground">(Optional)</span></Label>
             <Input
               id="businessName"
               placeholder="Your Business Ltd"
+              className="h-11 rounded-xl border-2 focus:border-primary transition-colors"
               {...form.register('businessName')}
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
+                  className="h-11 rounded-xl border-2 focus:border-primary transition-colors pr-10"
                   {...form.register('password')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -222,18 +244,19 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder="••••••••"
+                  className="h-11 rounded-xl border-2 focus:border-primary transition-colors pr-10"
                   {...form.register('confirmPassword')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -250,21 +273,28 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            className="w-full h-11 rounded-full text-lg shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all" 
+            disabled={isLoading}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating account...
               </>
             ) : (
-              'Create account'
+              <>
+                Create account
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
             )}
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link href="/login" className="text-primary hover:underline">
+          <Link href="/login" className="text-primary font-medium hover:underline">
             Sign in
           </Link>
         </p>
