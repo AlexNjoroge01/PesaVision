@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { FileQuestion, Upload, BarChart3, MessageSquare, FileText } from 'lucide-react'
+import { FileQuestion, Upload, BarChart3, MessageSquare, FileText, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
@@ -63,19 +63,20 @@ export function EmptyState({
         className
       )}
     >
-      <div className="rounded-full bg-muted p-4 mb-4">
-        <Icon className="h-8 w-8 text-muted-foreground" />
+      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center mb-6">
+        <Icon className="h-8 w-8 text-primary" />
       </div>
-      <h3 className="text-lg font-semibold mb-2">
+      <h3 className="text-xl font-semibold mb-2">
         {title || config.title}
       </h3>
       <p className="text-muted-foreground mb-6 max-w-sm">
         {description || config.description}
       </p>
       {(actionLabel || config.actionLabel) && (
-        <Button asChild>
+        <Button asChild className="rounded-full shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
           <Link href={actionHref || config.actionHref || '#'}>
             {actionLabel || config.actionLabel}
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       )}

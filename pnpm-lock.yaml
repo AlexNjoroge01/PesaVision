@@ -10,10 +10,10 @@ importers:
     dependencies:
       '@ai-sdk/groq':
         specifier: ^3.0.24
-        version: 3.0.24(zod@4.3.6)
+        version: 3.0.24(zod@3.25.76)
       '@ai-sdk/react':
         specifier: ^3.0.95
-        version: 3.0.95(react@19.2.3)(zod@4.3.6)
+        version: 3.0.95(react@19.2.3)(zod@3.25.76)
       '@auth/prisma-adapter':
         specifier: ^2.11.1
         version: 2.11.1(@prisma/client@7.4.1(prisma@7.4.1(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(typescript@5.9.3))
@@ -46,7 +46,7 @@ importers:
         version: 5.91.3(@tanstack/react-query@5.90.21(react@19.2.3))(react@19.2.3)
       ai:
         specifier: ^6.0.92
-        version: 6.0.92(zod@4.3.6)
+        version: 6.0.92(zod@3.25.76)
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
@@ -126,8 +126,8 @@ importers:
         specifier: ^5.12.2
         version: 5.12.2
       zod:
-        specifier: ^4.3.6
-        version: 4.3.6
+        specifier: ^3.25.76
+        version: 3.25.76
       zustand:
         specifier: ^5.0.11
         version: 5.0.11(@types/react@19.2.14)(immer@11.1.4)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
@@ -144,6 +144,9 @@ importers:
       '@types/pdf-parse':
         specifier: ^1.1.5
         version: 1.1.5
+      '@types/pg':
+        specifier: ^8.16.0
+        version: 8.16.0
       '@types/react':
         specifier: ^19
         version: 19.2.14
@@ -2131,6 +2134,9 @@ packages:
 
   '@types/pdf-parse@1.1.5':
     resolution: {integrity: sha512-kBfrSXsloMnUJOKi25s3+hRmkycHfLK6A09eRGqF/N8BkQoPUmaCr+q8Cli5FnfohEz/rsv82zAiPz/LXtOGhA==}
+
+  '@types/pg@8.16.0':
+    resolution: {integrity: sha512-RmhMd/wD+CF8Dfo+cVIy3RR5cl8CyfXQ0tGgW6XBL8L4LM/UTEbNXYRbLwU6w+CgrKBNbrQWt4FUtTfaU5jSYQ==}
 
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
@@ -5412,34 +5418,34 @@ packages:
 
 snapshots:
 
-  '@ai-sdk/gateway@3.0.51(zod@4.3.6)':
+  '@ai-sdk/gateway@3.0.51(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
       '@vercel/oidc': 3.1.0
-      zod: 4.3.6
+      zod: 3.25.76
 
-  '@ai-sdk/groq@3.0.24(zod@4.3.6)':
+  '@ai-sdk/groq@3.0.24(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
-      zod: 4.3.6
+      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
+      zod: 3.25.76
 
-  '@ai-sdk/provider-utils@4.0.15(zod@4.3.6)':
+  '@ai-sdk/provider-utils@4.0.15(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
-      zod: 4.3.6
+      zod: 3.25.76
 
   '@ai-sdk/provider@3.0.8':
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@3.0.95(react@19.2.3)(zod@4.3.6)':
+  '@ai-sdk/react@3.0.95(react@19.2.3)(zod@3.25.76)':
     dependencies:
-      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
-      ai: 6.0.93(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
+      ai: 6.0.93(zod@3.25.76)
       react: 19.2.3
       swr: 2.4.0(react@19.2.3)
       throttleit: 2.1.0
@@ -7408,6 +7414,12 @@ snapshots:
     dependencies:
       '@types/node': 20.19.33
 
+  '@types/pg@8.16.0':
+    dependencies:
+      '@types/node': 20.19.33
+      pg-protocol: 1.11.0
+      pg-types: 2.2.0
+
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
     dependencies:
       '@types/react': 19.2.14
@@ -7602,21 +7614,21 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai@6.0.92(zod@4.3.6):
+  ai@6.0.92(zod@3.25.76):
     dependencies:
-      '@ai-sdk/gateway': 3.0.51(zod@4.3.6)
+      '@ai-sdk/gateway': 3.0.51(zod@3.25.76)
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
-      zod: 4.3.6
+      zod: 3.25.76
 
-  ai@6.0.93(zod@4.3.6):
+  ai@6.0.93(zod@3.25.76):
     dependencies:
-      '@ai-sdk/gateway': 3.0.51(zod@4.3.6)
+      '@ai-sdk/gateway': 3.0.51(zod@3.25.76)
       '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.15(zod@4.3.6)
+      '@ai-sdk/provider-utils': 4.0.15(zod@3.25.76)
       '@opentelemetry/api': 1.9.0
-      zod: 4.3.6
+      zod: 3.25.76
 
   ajv-formats@3.0.1(ajv@8.18.0):
     optionalDependencies:

@@ -1,9 +1,9 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import type { Statement, StatementStatus } from '@/types'
+import type { Statement, StatementStatus, Insight } from '@/types'
 
-interface StatementWithInsight extends Statement {
+interface StatementWithInsight extends Omit<Statement, 'insight'> {
   insight?: {
     healthScore: number
   } | null

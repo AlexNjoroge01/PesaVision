@@ -1,26 +1,69 @@
 import { generateText } from 'ai'
 import { z } from 'zod'
-import { groq, ANALYSIS_MODEL } from './groq'
-import { RawTransaction, Insight, TopCustomer, TopExpense, PeakDay, MonthlySummary, Recommendation } from '@/types'
+import { groq, ANALYSIS_MODEL, MAX_TOKENS } from './groq'
+import { RawTransaction, TopCustomer, TopExpense, PeakDay, MonthlySummary, Recommendation } from '@/types'
 
-// Zod schema for AI response validation
-const InsightSchema = z.object({
-  transactions: z.array(
-    z.object({
-      reference: z.string().nullable(),
-      category: z.enum([
-        'SALES',
-        'SUPPLIER_PAYMENT',
-        'UTILITY',
-        'SALARY',
-        'WITHDRAWAL',
-        'TRANSFER',
-        'AIRTIME',
-        'UNCATEGORIZED',
-      ]),
-      counterparty: z.string().nullable().optional(),
-    })
-  ),
+const VALID_CATEGORIES = [
+  'SALES',
+  'SUPPLIER_PAYMENT',
+  'UTILITY',
+  'SALARY',
+  'WITHDRAWAL',
+  'TRANSFER',
+  'AIRTIME',
+  'UNCATEGORIZED',
+] as const
+
+const CATEGORIZATION_SYSTEM = `You categorize M-Pesa transactions for Kenyan small businesses.
+Return ONLY a JSON array. No markdown, no backticks, no explanation.
+Each element: {"ref":"REFERENCE","cat":"CATEGORY","cp":"COUNTERPARTY_NAME_OR_NULL"}
+Categories: SALES, SUPPLIER_PAYMENT, UTILITY, SALARY, WITHDRAWAL, TRANSFER, AIRTIME, UNCATEGORIZED
+Extract counterparty names from descriptions (e.g. "Payment to 123 - JOHN SHOP" → cp:"JOHN SHOP").`
+
+const INSIGHTS_SYSTEM = `You are a financial advisor for Kenyan small business owners analyzing M-Pesa transaction summaries.
+Return ONLY a valid JSON object. No markdown, no backticks, no explanation.
+
+Context for Kenyan SMEs:
+- M-Pesa is the primary payment method
+- Common types: Paybill, Till, Send Money
+- KRA compliance matters for tax reporting
+
+Health Score: 70-100 strong, 50-69 moderate, 0-49 poor
+
+JSON keys required:
+- topCustomers: [{name, totalAmount, transactionCount}] (top 10)
+- topExpenses: [{category, amount, percentage}]
+- peakDays: [{dayOfWeek, averageAmount}]
+- monthlySummary: [{month, totalIn, totalOut, netFlow}]
+- aiSummary: 2-3 sentence plain English summary
+- recommendations: [{title, description, priority}] (priority: "high"|"medium"|"low")
+- healthScore: 0-100`
+
+interface AnalysisResult {
+  transactions: Array<{
+    reference: string | null
+    category: string
+    counterparty: string | null
+  }>
+  topCustomers: TopCustomer[]
+  topExpenses: TopExpense[]
+  peakDays: PeakDay[]
+  monthlySummary: MonthlySummary[]
+  aiSummary: string
+  recommendations: Recommendation[]
+  healthScore: number
+}
+
+// Zod schemas for each phase
+const CategorizationSchema = z.array(
+  z.object({
+    ref: z.string().nullable(),
+    cat: z.enum(VALID_CATEGORIES),
+    cp: z.string().nullable().optional(),
+  })
+)
+
+const InsightsResponseSchema = z.object({
   topCustomers: z.array(
     z.object({
       name: z.string(),
@@ -60,115 +103,330 @@ const InsightSchema = z.object({
   healthScore: z.number().min(0).max(100),
 })
 
-const SYSTEM_PROMPT = `You are a financial advisor for Kenyan small business owners analyzing M-Pesa transactions.
+/**
+ * Attempt to repair truncated JSON by closing open brackets/braces
+ */
+function repairTruncatedJson(text: string): string {
+  try {
+    JSON.parse(text)
+    return text
+  } catch {
+    // Continue with repair
+  }
 
-Your role is to:
-1. Categorize each transaction into appropriate categories
-2. Identify top customers by revenue (incoming transactions)
-3. Analyze expense patterns by category
-4. Identify peak business days
-5. Generate monthly summaries
-6. Provide a plain-English business summary that a non-accountant can understand
-7. Give actionable recommendations with priority levels
-8. Calculate a business health score (0-100)
+  let repaired = text.replace(/,\s*"[^"]*$/, '')
+  repaired = repaired.replace(/,\s*"[^"]*":\s*"[^"]*$/, '')
+  repaired = repaired.replace(/,\s*"[^"]*":\s*$/, '')
+  repaired = repaired.replace(/,\s*\{[^}]*$/, '')
+  repaired = repaired.replace(/,\s*$/, '')
 
-Context for Kenyan SMEs:
-- M-Pesa is the primary payment method for most small businesses
-- Common transaction types: Paybill (business payments), Till (retail purchases), Send Money (P2P)
-- KRA compliance is important for tax reporting
-- Common business types: retail shops, restaurants, service providers, freelancers
+  let openBraces = 0
+  let openBrackets = 0
+  let inString = false
+  let escaped = false
 
-Health Score Guidelines:
-- 70-100: Strong positive cash flow, consistent revenue, manageable expenses
-- 50-69: Moderate health, some cash flow concerns or irregular income
-- 0-49: Poor health, negative cash flow, high expenses, or irregular patterns
+  for (const char of repaired) {
+    if (escaped) { escaped = false; continue }
+    if (char === '\\') { escaped = true; continue }
+    if (char === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (char === '{') openBraces++
+    else if (char === '}') openBraces--
+    else if (char === '[') openBrackets++
+    else if (char === ']') openBrackets--
+  }
 
-CRITICAL Output Rules:
-- Return ONLY a valid JSON object with NO markdown, NO backticks, NO explanation
-- The transaction array key MUST be named "transactions", not "categorizedTransactions"
-- Categories MUST be exactly one of: SALES, SUPPLIER_PAYMENT, UTILITY, SALARY, WITHDRAWAL, TRANSFER, AIRTIME, UNCATEGORIZED — no other values allowed
-- topCustomers MUST be an array of objects with: name (string), totalAmount (number), transactionCount (number)
-- topExpenses MUST be an array of objects with: category (string), amount (number), percentage (number)
-- peakDays MUST be an array of objects with: dayOfWeek (string), averageAmount (number)
-- monthlySummary MUST be an array of objects with: month (string), totalIn (number), totalOut (number), netFlow (number)
-- recommendations MUST be an array of objects with: title (string), description (string), priority ("high" or "medium" or "low")
-- aiSummary should be 2-3 sentences in plain English
-- healthScore should be a number between 0 and 100
-- counterparty names should be extracted from transaction descriptions`
+  while (openBrackets > 0) { repaired += ']'; openBrackets-- }
+  while (openBraces > 0) { repaired += '}'; openBraces-- }
 
-interface AnalysisResult {
-  transactions: Array<{
-    reference: string | null
-    category: string
-    counterparty: string | null
-  }>
-  topCustomers: TopCustomer[]
-  topExpenses: TopExpense[]
-  peakDays: PeakDay[]
-  monthlySummary: MonthlySummary[]
-  aiSummary: string
-  recommendations: Recommendation[]
-  healthScore: number
+  return repaired
+}
+
+function parseJsonSafe(text: string): unknown {
+  const cleaned = text.replace(/```json|```/g, '').trim()
+  try {
+    return JSON.parse(cleaned)
+  } catch {
+    console.log('[ANALYZER] JSON parse failed, attempting repair...')
+    const repaired = repairTruncatedJson(cleaned)
+    return JSON.parse(repaired)
+  }
 }
 
 /**
- * Analyze transactions using Groq AI
+ * Delay helper for rate limiting
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Categorize a batch of transactions using AI
+ */
+async function categorizeBatch(
+  batch: RawTransaction[]
+): Promise<Array<{ ref: string | null; cat: string; cp: string | null }>> {
+  const compact = batch.map((t) => `${t.reference}|${t.description}|${t.amount}|${t.isIncoming ? 'IN' : 'OUT'}`)
+
+  const { text } = await generateText({
+    model: groq(ANALYSIS_MODEL),
+    maxOutputTokens: 4000,
+    system: CATEGORIZATION_SYSTEM,
+    prompt: `Categorize these M-Pesa transactions (format: ref|description|amount|direction):\n${compact.join('\n')}`,
+  })
+
+  const parsed = parseJsonSafe(text)
+  return CategorizationSchema.parse(parsed).map((t) => ({
+    ref: t.ref,
+    cat: t.cat,
+    cp: t.cp ?? null,
+  }))
+}
+
+/**
+ * Generate business insights from pre-categorized transaction summary
+ */
+async function generateInsights(
+  transactions: RawTransaction[],
+  categorized: Array<{ ref: string | null; cat: string; cp: string | null }>
+): Promise<Omit<AnalysisResult, 'transactions'>> {
+  // Build a compact summary instead of sending all transactions
+  const categoryMap = new Map<string, { ref: string | null; cat: string; cp: string | null }>()
+  for (const c of categorized) {
+    if (c.ref) categoryMap.set(c.ref, c)
+  }
+
+  const totalIn = transactions.filter((t) => t.isIncoming).reduce((s, t) => s + t.amount, 0)
+  const totalOut = transactions.filter((t) => !t.isIncoming).reduce((s, t) => s + t.amount, 0)
+
+  // Group by category
+  const catSummary: Record<string, { count: number; totalIn: number; totalOut: number }> = {}
+  for (const t of transactions) {
+    const cat = (t.reference && categoryMap.get(t.reference)?.cat) || 'UNCATEGORIZED'
+    if (!catSummary[cat]) catSummary[cat] = { count: 0, totalIn: 0, totalOut: 0 }
+    catSummary[cat].count++
+    if (t.isIncoming) catSummary[cat].totalIn += t.amount
+    else catSummary[cat].totalOut += t.amount
+  }
+
+  // Group by month
+  const monthSummary: Record<string, { totalIn: number; totalOut: number }> = {}
+  for (const t of transactions) {
+    const month = t.date.toISOString().slice(0, 7)
+    if (!monthSummary[month]) monthSummary[month] = { totalIn: 0, totalOut: 0 }
+    if (t.isIncoming) monthSummary[month].totalIn += t.amount
+    else monthSummary[month].totalOut += t.amount
+  }
+
+  // Top counterparties (incoming = customers)
+  const cpMap = new Map<string, { total: number; count: number }>()
+  for (const t of transactions.filter((tx) => tx.isIncoming)) {
+    const cp = (t.reference && categoryMap.get(t.reference)?.cp) || t.counterparty
+    if (cp) {
+      const existing = cpMap.get(cp) || { total: 0, count: 0 }
+      cpMap.set(cp, { total: existing.total + t.amount, count: existing.count + 1 })
+    }
+  }
+
+  // Day of week summary
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const dayTotals: Record<string, { total: number; count: number }> = {}
+  for (const t of transactions) {
+    const day = dayNames[t.date.getDay()]
+    if (!dayTotals[day]) dayTotals[day] = { total: 0, count: 0 }
+    dayTotals[day].total += t.amount
+    dayTotals[day].count++
+  }
+
+  const summaryData = {
+    totalTransactions: transactions.length,
+    totalIn: Math.round(totalIn),
+    totalOut: Math.round(totalOut),
+    netFlow: Math.round(totalIn - totalOut),
+    categories: catSummary,
+    months: monthSummary,
+    topCounterparties: Array.from(cpMap.entries())
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, total: Math.round(data.total), count: data.count })),
+    dayOfWeek: dayTotals,
+  }
+
+  const { text } = await generateText({
+    model: groq(ANALYSIS_MODEL),
+    maxOutputTokens: MAX_TOKENS,
+    system: INSIGHTS_SYSTEM,
+    prompt: `Generate business insights from this M-Pesa transaction summary:\n${JSON.stringify(summaryData)}`,
+  })
+
+  const parsed = parseJsonSafe(text)
+  return InsightsResponseSchema.parse(parsed)
+}
+
+/**
+ * Analyze transactions using Groq AI (two-phase: categorize then insights)
  */
 export async function analyzeTransactions(
   transactions: RawTransaction[]
 ): Promise<AnalysisResult> {
-  // Handle large transaction sets by batching
-  const BATCH_SIZE = 200
-  let transactionsToAnalyze = transactions
+  // Phase 1: Categorize transactions in batches
+  // Keep batches small to stay within Groq's 12K TPM free tier limit
+  const BATCH_SIZE = 30
+  const allCategorized: Array<{ ref: string | null; cat: string; cp: string | null }> = []
 
-  if (transactions.length > BATCH_SIZE) {
-    // For large datasets, analyze first batch and aggregate the rest
-    transactionsToAnalyze = transactions.slice(0, BATCH_SIZE)
+  console.log(`[ANALYZER] Phase 1: Categorizing ${transactions.length} transactions in batches of ${BATCH_SIZE}`)
+
+  for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
+    const batch = transactions.slice(i, i + BATCH_SIZE)
+    const batchNum = Math.floor(i / BATCH_SIZE) + 1
+    const totalBatches = Math.ceil(transactions.length / BATCH_SIZE)
+
+    console.log(`[ANALYZER] Categorizing batch ${batchNum}/${totalBatches} (${batch.length} transactions)`)
+
+    let success = false
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        // Rate limit: wait between batches (Groq free tier is per-minute)
+        if (i > 0) {
+          const waitMs = 8000 // 8 seconds between batches to stay under TPM
+          console.log(`[ANALYZER] Rate limit: waiting ${waitMs}ms...`)
+          await delay(waitMs)
+        }
+
+        const result = await categorizeBatch(batch)
+        allCategorized.push(...result)
+        success = true
+        break
+      } catch (error) {
+        console.error(`[ANALYZER] Batch ${batchNum} attempt ${attempt + 1} failed:`, error)
+        if (attempt < 2) {
+          // Wait longer on retry (rate limit backoff)
+          await delay(15000)
+        }
+      }
+    }
+
+    if (!success) {
+      // If categorization fails for a batch, use UNCATEGORIZED as fallback
+      console.log(`[ANALYZER] Batch ${batchNum} failed all retries, using UNCATEGORIZED fallback`)
+      for (const t of batch) {
+        allCategorized.push({ ref: t.reference, cat: 'UNCATEGORIZED', cp: t.counterparty })
+      }
+    }
   }
 
-  // Format transactions for AI
-  const formattedTransactions = transactionsToAnalyze.map((t) => ({
-    date: t.date.toISOString(),
-    description: t.description,
-    amount: t.amount,
-    isIncoming: t.isIncoming,
-    reference: t.reference,
-    counterparty: t.counterparty,
-  }))
+  console.log(`[ANALYZER] Phase 1 complete: ${allCategorized.length} transactions categorized`)
 
-  try {
-    const { text } = await generateText({
-      model: groq(ANALYSIS_MODEL),
-      system: SYSTEM_PROMPT + '\n\nReturn ONLY a valid JSON object. No markdown, no backticks, no explanation.',
-      prompt: `Analyze these M-Pesa transactions and provide business insights:
+  // Phase 2: Generate insights from the categorized summary
+  console.log('[ANALYZER] Phase 2: Generating business insights')
 
-${JSON.stringify(formattedTransactions, null, 2)}
+  // Wait before insights call to respect rate limits
+  await delay(10000)
 
-Total transactions: ${transactions.length}
-${transactions.length > BATCH_SIZE ? `Note: Showing first ${BATCH_SIZE} of ${transactions.length} transactions for analysis.` : ''}
+  let insights: Omit<AnalysisResult, 'transactions'>
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      insights = await generateInsights(transactions, allCategorized)
 
-Provide:
-1. Category for each transaction
-2. Top 10 customers by revenue
-3. Top expense categories
-4. Peak business days
-5. Monthly summary
-6. Business summary in plain English
-7. Actionable recommendations
-8. Health score (0-100)`,
-    })
+      return {
+        transactions: allCategorized.map((t) => ({
+          reference: t.ref,
+          category: t.cat,
+          counterparty: t.cp,
+        })),
+        ...insights,
+      }
+    } catch (error) {
+      console.error(`[ANALYZER] Insights attempt ${attempt + 1} failed:`, error)
+      if (attempt < 2) {
+        await delay(15000)
+      }
+    }
+  }
 
-    // Parse the response - clean up any markdown formatting
-    const cleaned = text.replace(/```json|```/g, '').trim()
-    console.log('[ANALYZER] Raw AI response:', cleaned.substring(0, 2000))
-    const object = InsightSchema.parse(JSON.parse(cleaned))
+  // If insights generation fails, return categorized data with computed insights
+  console.log('[ANALYZER] Insights generation failed, computing locally')
+  return buildFallbackInsights(transactions, allCategorized)
+}
 
-    return object as AnalysisResult
-  } catch (error) {
-    console.error('Error analyzing transactions:', error)
-    throw new Error(
-      `Failed to analyze transactions: ${error instanceof Error ? error.message : 'Unknown error'}`
-    )
+/**
+ * Build fallback insights locally when AI insights generation fails
+ */
+function buildFallbackInsights(
+  transactions: RawTransaction[],
+  categorized: Array<{ ref: string | null; cat: string; cp: string | null }>
+): AnalysisResult {
+  const categoryMap = new Map<string, { ref: string | null; cat: string; cp: string | null }>()
+  for (const c of categorized) {
+    if (c.ref) categoryMap.set(c.ref, c)
+  }
+
+  const totalIn = transactions.filter((t) => t.isIncoming).reduce((s, t) => s + t.amount, 0)
+  const totalOut = transactions.filter((t) => !t.isIncoming).reduce((s, t) => s + t.amount, 0)
+
+  // Top customers
+  const cpMap = new Map<string, { total: number; count: number }>()
+  for (const t of transactions.filter((tx) => tx.isIncoming)) {
+    const cp = (t.reference && categoryMap.get(t.reference)?.cp) || t.counterparty
+    if (cp) {
+      const existing = cpMap.get(cp) || { total: 0, count: 0 }
+      cpMap.set(cp, { total: existing.total + t.amount, count: existing.count + 1 })
+    }
+  }
+
+  // Expense categories
+  const expenseMap = new Map<string, number>()
+  for (const t of transactions.filter((tx) => !tx.isIncoming)) {
+    const cat = (t.reference && categoryMap.get(t.reference)?.cat) || 'UNCATEGORIZED'
+    expenseMap.set(cat, (expenseMap.get(cat) || 0) + t.amount)
+  }
+
+  // Monthly summary
+  const monthMap = new Map<string, { totalIn: number; totalOut: number }>()
+  for (const t of transactions) {
+    const month = t.date.toISOString().slice(0, 7)
+    const existing = monthMap.get(month) || { totalIn: 0, totalOut: 0 }
+    if (t.isIncoming) existing.totalIn += t.amount
+    else existing.totalOut += t.amount
+    monthMap.set(month, existing)
+  }
+
+  // Peak days
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const dayTotals = new Map<string, { total: number; count: number }>()
+  for (const t of transactions) {
+    const day = dayNames[t.date.getDay()]
+    const existing = dayTotals.get(day) || { total: 0, count: 0 }
+    dayTotals.set(day, { total: existing.total + t.amount, count: existing.count + 1 })
+  }
+
+  const healthScore = totalIn > totalOut ? Math.min(80, Math.round((totalIn / (totalIn + totalOut)) * 100)) : Math.max(20, Math.round((totalIn / (totalIn + totalOut)) * 100))
+
+  return {
+    transactions: categorized.map((t) => ({
+      reference: t.ref,
+      category: t.cat,
+      counterparty: t.cp,
+    })),
+    topCustomers: Array.from(cpMap.entries())
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, totalAmount: data.total, transactionCount: data.count })),
+    topExpenses: Array.from(expenseMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([category, amount]) => ({ category, amount, percentage: Math.round((amount / totalOut) * 100) })),
+    peakDays: Array.from(dayTotals.entries())
+      .map(([dayOfWeek, data]) => ({ dayOfWeek, averageAmount: data.total / data.count }))
+      .sort((a, b) => b.averageAmount - a.averageAmount),
+    monthlySummary: Array.from(monthMap.entries())
+      .sort()
+      .map(([month, data]) => ({ month, totalIn: data.totalIn, totalOut: data.totalOut, netFlow: data.totalIn - data.totalOut })),
+    aiSummary: `This business processed ${transactions.length} transactions with KES ${Math.round(totalIn).toLocaleString()} incoming and KES ${Math.round(totalOut).toLocaleString()} outgoing. Net cash flow is KES ${Math.round(totalIn - totalOut).toLocaleString()}.`,
+    recommendations: [
+      { title: 'Track your expenses', description: 'Monitor your spending categories to identify areas for cost reduction.', priority: 'medium' as const },
+      { title: 'Build cash reserves', description: 'Aim to maintain at least 3 months of operating expenses as reserves.', priority: 'high' as const },
+    ],
+    healthScore,
   }
 }
 

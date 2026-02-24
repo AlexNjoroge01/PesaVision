@@ -110,12 +110,12 @@ export async function POST(request: NextRequest) {
       await prisma.insight.create({
         data: {
           statementId,
-          topCustomers: analysis.topCustomers,
-          topExpenses: analysis.topExpenses,
-          peakDays: analysis.peakDays,
-          monthlySummary: analysis.monthlySummary,
+          topCustomers: JSON.parse(JSON.stringify(analysis.topCustomers)),
+          topExpenses: JSON.parse(JSON.stringify(analysis.topExpenses)),
+          peakDays: JSON.parse(JSON.stringify(analysis.peakDays)),
+          monthlySummary: JSON.parse(JSON.stringify(analysis.monthlySummary)),
           aiSummary: analysis.aiSummary,
-          recommendations: analysis.recommendations,
+          recommendations: JSON.parse(JSON.stringify(analysis.recommendations)),
           healthScore: analysis.healthScore,
         },
       })

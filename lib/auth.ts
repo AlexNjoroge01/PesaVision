@@ -24,6 +24,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log('Missing credentials')
           return null
         }
 
@@ -31,7 +32,13 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         })
 
-        if (!user || !user.password) {
+        if (!user) {
+          console.log('User not found:', credentials.email)
+          return null
+        }
+
+        if (!user.password) {
+          console.log('User has no password set (OAuth user?):', credentials.email)
           return null
         }
 
@@ -41,8 +48,11 @@ export const authOptions: NextAuthOptions = {
         )
 
         if (!passwordMatch) {
+          console.log('Password mismatch for user:', credentials.email)
           return null
         }
+
+        console.log('User authenticated successfully:', credentials.email)
 
         return {
           id: user.id,

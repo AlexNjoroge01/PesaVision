@@ -18,7 +18,7 @@ import {
   FileText,
   MessageSquare,
   Settings,
-  BarChart3,
+  LineChart,
   FileBarChart,
   Menu,
   LogOut,
@@ -47,9 +47,14 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
         <SheetHeader className="border-b p-4">
-          <SheetTitle className="flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" />
-            <span>PesaVision</span>
+          <SheetTitle className="flex items-center gap-3">
+            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-primary/25">
+              <LineChart className="h-4 w-4 text-white" />
+              <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-400 border-2 border-background" />
+            </div>
+            <span className="font-bold text-lg">
+              Pesa<span className="text-primary">Vision</span>
+            </span>
           </SheetTitle>
         </SheetHeader>
         <div className="flex flex-col h-full">
@@ -78,9 +83,9 @@ export function MobileNav() {
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                     isActive
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-gradient-to-r from-primary to-violet-500 text-white shadow-lg shadow-primary/25'
                       : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
@@ -95,7 +100,7 @@ export function MobileNav() {
           <div className="border-t p-2">
             <Button
               variant="ghost"
-              className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50"
+              className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-xl"
               onClick={() => signOut({ callbackUrl: '/login' })}
             >
               <LogOut className="mr-2 h-5 w-5" />

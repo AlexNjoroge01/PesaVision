@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import type { Statement } from '@/types'
 
 interface StatementCardProps {
-  statement: Statement & {
+  statement: Omit<Statement, 'insight'> & {
     insight?: { healthScore: number } | null
     _count?: { transactions: number }
   }
@@ -30,11 +30,16 @@ export function StatementCard({ statement, className }: StatementCardProps) {
       transition={{ duration: 0.3 }}
     >
       <Link href={`/statements/${statement.id}`}>
-        <Card className={cn('hover:shadow-md transition-shadow cursor-pointer', className)}>
-          <CardContent className="p-4">
+        <Card className={cn(
+          'bg-background/80 backdrop-blur border-0 shadow-lg hover:shadow-xl transition-all cursor-pointer',
+          className
+        )}>
+          <CardContent className="p-5">
             <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground" />
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
                 <div>
                   <p className="font-medium text-sm truncate max-w-[200px]">
                     {statement.fileName}
@@ -55,16 +60,16 @@ export function StatementCard({ statement, className }: StatementCardProps) {
             )}
 
             {statement.status === 'DONE' && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-3 border-t">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 text-green-600">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                       <ArrowUpRight className="h-3 w-3" />
                       <span className="text-xs font-medium">
                         KES {statement.totalIn.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 text-red-600">
+                    <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
                       <ArrowDownRight className="h-3 w-3" />
                       <span className="text-xs font-medium">
                         KES {statement.totalOut.toLocaleString()}
@@ -74,7 +79,7 @@ export function StatementCard({ statement, className }: StatementCardProps) {
                   <div className="flex items-center gap-1">
                     <span className={cn(
                       'text-xs font-semibold',
-                      statement.netFlow >= 0 ? 'text-green-600' : 'text-red-600'
+                      statement.netFlow >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                     )}>
                       Net: KES {statement.netFlow.toLocaleString()}
                     </span>
