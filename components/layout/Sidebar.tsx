@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useSession, signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/stores/useAppStore'
 import {
@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
+  LogOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -63,11 +64,22 @@ export function Sidebar() {
             </Link>
           )}
           {!sidebarOpen && (
-            <Link href="/dashboard" className="mx-auto group">
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-shadow">
-                <LineChart className="h-4 w-4 text-white" />
-              </div>
-            </Link>
+            <div className="flex items-center justify-center w-full gap-1">
+              <Link href="/dashboard" className="group">
+                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-shadow">
+                  <LineChart className="h-4 w-4 text-white" />
+                </div>
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className="h-8 w-8 ml-1"
+                title="Expand sidebar"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           )}
           {sidebarOpen && (
             <Button
@@ -75,22 +87,12 @@ export function Sidebar() {
               size="icon"
               onClick={toggleSidebar}
               className="ml-auto h-8 w-8"
+              title="Collapse sidebar"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
         </div>
-
-        {!sidebarOpen && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="absolute top-20 left-1/2 -translate-x-1/2 h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-2">
@@ -137,14 +139,45 @@ export function Sidebar() {
           )}
         </nav>
 
-        {/* Footer */}
-        {sidebarOpen && (
-          <div className="border-t p-4">
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} PesaVision
-            </p>
-          </div>
-        )}
+        {/* Footer with Sign Out */}
+        <div className="border-t p-2">
+          {sidebarOpen ? (
+            <div className="space-y-3">
+              {/* <div className="flex items-center gap-3 px-3 py-2">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-violet-500 flex items-center justify-center text-white font-medium text-xs">
+                  {(session?.user?.name || session?.user?.email || 'U')[0].toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{session?.user?.name || 'User'}</p>
+                  <p className="text-xs text-muted-foreground truncate">{session?.user?.email}</p>
+                </div>
+              </div> */}
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+                onClick={() => signOut({ callbackUrl: '/login' })}
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+              <p className="text-xs text-muted-foreground text-center pt-1">
+                © {new Date().getFullYear()} PesaVision
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 py-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950"
+                onClick={() => signOut({ callbackUrl: '/login' })}
+                title="Sign Out"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </aside>
   )

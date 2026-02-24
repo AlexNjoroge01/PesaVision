@@ -123,9 +123,9 @@ const features = [
 ]
 
 const stats = [
-  { value: '10K+', label: 'Statements Analyzed' },
-  { value: '500+', label: 'Active Businesses' },
-  { value: 'KES 2B+', label: 'Transactions Processed' },
+  { value: '100+', label: 'Statements Analyzed' },
+  { value: '20+', label: 'Active Businesses' },
+  { value: 'KES 100k+', label: 'Transactions Processed' },
   { value: '99.9%', label: 'Uptime' },
 ]
 
@@ -164,7 +164,7 @@ export default function LandingPage() {
       <section className="relative py-24 px-4 overflow-hidden">
         <div className="container mx-auto text-center max-w-5xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
-            <Sparkles className="h-4 w-4 text-primary" />
+            
             <span className="text-sm font-medium">AI-Powered Financial Analytics</span>
           </div>
           
