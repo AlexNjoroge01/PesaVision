@@ -2,7 +2,26 @@ import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import type { ReactElement } from 'react'
 
-export const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy-initialize Resend to avoid build-time errors when env vars aren't available
+let resendInstance: Resend | null = null
+
+function getResend(): Resend {
+  if (!resendInstance) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is not set')
+    }
+    resendInstance = new Resend(apiKey)
+  }
+  return resendInstance
+}
+
+// Export a getter instead of the instance directly
+export const resend = {
+  get emails() {
+    return getResend().emails
+  }
+}
 
 export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
 
