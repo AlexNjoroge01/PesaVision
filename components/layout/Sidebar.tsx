@@ -9,7 +9,7 @@ import {
   FileText,
   MessageSquare,
   Settings,
-  BarChart3,
+  LineChart,
   FileBarChart,
   ChevronLeft,
   ChevronRight,
@@ -31,7 +31,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen border-r bg-background transition-all duration-300',
+        'fixed left-0 top-0 z-40 h-screen border-r bg-background/95 backdrop-blur-xl transition-all duration-300',
         sidebarOpen ? 'w-64' : 'w-16'
       )}
     >
@@ -39,24 +39,47 @@ export function Sidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between border-b px-4">
           {sidebarOpen && (
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 text-primary" />
-              <span className="font-bold text-lg">PesaVision</span>
+            <Link href="/dashboard" className="flex items-center gap-3 group">
+              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-shadow">
+                <LineChart className="h-4 w-4 text-white" />
+                <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-400 border-2 border-background" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-base tracking-tight">
+                  Pesa<span className="text-primary">Vision</span>
+                </span>
+              </div>
             </Link>
           )}
+          {!sidebarOpen && (
+            <Link href="/dashboard" className="mx-auto group">
+              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-primary via-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-xl group-hover:shadow-primary/30 transition-shadow">
+                <LineChart className="h-4 w-4 text-white" />
+              </div>
+            </Link>
+          )}
+          {sidebarOpen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="ml-auto h-8 w-8"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+
+        {!sidebarOpen && (
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="ml-auto"
+            className="absolute top-20 left-1/2 -translate-x-1/2 h-8 w-8"
           >
-            {sidebarOpen ? (
-              <ChevronLeft className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
+            <ChevronRight className="h-4 w-4" />
           </Button>
-        </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-2">
@@ -67,9 +90,9 @@ export function Sidebar() {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-gradient-to-r from-primary to-violet-500 text-white shadow-lg shadow-primary/25'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                   !sidebarOpen && 'justify-center'
                 )}
@@ -86,7 +109,7 @@ export function Sidebar() {
         {sidebarOpen && (
           <div className="border-t p-4">
             <p className="text-xs text-muted-foreground">
-              © 2024 PesaVision
+              © {new Date().getFullYear()} PesaVision
             </p>
           </div>
         )}

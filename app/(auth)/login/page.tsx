@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod-v4'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -47,12 +47,18 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        toast.error('Invalid email or password')
+        console.log('Login error:', result.error)
+        if (result.error === 'CredentialsSignin') {
+          toast.error('Invalid email or password. If you signed up with Google, please use Google to sign in.')
+        } else {
+          toast.error(result.error)
+        }
       } else {
         toast.success('Welcome back!')
         router.push('/dashboard')
       }
     } catch (error) {
+      console.error('Login exception:', error)
       toast.error('Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
